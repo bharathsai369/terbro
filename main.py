@@ -8,6 +8,7 @@ import textwrap
 from bs4 import BeautifulSoup
 from pathlib import Path
 from datetime import datetime
+import os
 
 # --- CONFIG & DIRECTORIES ---
 CACHE_DIR = Path.home() / ".cache" / "terbro"
@@ -33,20 +34,26 @@ def die(msg, code=3):
 def fetch_content(url, refresh=False, offline=False):
     cache_path = CACHE_DIR / hashlib.sha256(url.encode()).hexdigest()
     
+    # 1. Check if we can just use the cache
     if cache_path.exists() and not refresh:
         return cache_path.read_text(encoding='utf-8')
     
     if offline: 
-        die("page not in cache (offline mode requested)", 2)
+        die("Offline mode: No cached version found.", 2)
 
     try:
-        headers = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) Terbro/2.0"}
-        r = requests.get(url, headers=headers, timeout=10)
+        r = requests.get(url, headers={"User-Agent": "Terbro/2.0"}, timeout=10)
         r.raise_for_status()
+        
+        # Only write to disk if we got a 200 OK
         cache_path.write_text(r.text, encoding='utf-8')
         return r.text
     except Exception as e:
-        die(f"network failure: {e}", 2)
+        # 2. Friendly Fallback: If refresh fails, try to show the old cache anyway
+        if cache_path.exists():
+            print(f"{Bcolors.YELLOW}Warning: Refresh failed. Showing cached version.{Bcolors.ENDC}", file=sys.stderr)
+            return cache_path.read_text(encoding='utf-8')
+        die(f"Network failure: {e}", 2)
 
 def process(html, args):
     soup = BeautifulSoup(html, "html.parser")
@@ -116,6 +123,21 @@ def handle_history(query=None):
     for i, entry in enumerate(data[:20]):
         print(f"[{i}] {Bcolors.CYAN}{entry['title']}{Bcolors.ENDC}\n    {entry['url']}")
 
+# New Function: Cache Maintenance
+def manage_cache(limit=100):
+    """Removes the oldest files if the cache exceeds the limit."""
+    files = sorted(CACHE_DIR.glob('*'), key=lambda x: x.stat().st_mtime)
+    if len(files) > limit:
+        for f in files[:len(files) - limit]:
+            f.unlink()
+
+def clear_cache():
+    """Force deletes everything in the cache folder."""
+    for f in CACHE_DIR.glob('*'):
+        f.unlink()
+    print(f"{Bcolors.YELLOW}Cache cleared.{Bcolors.ENDC}")
+
+
 def main():
     parser = argparse.ArgumentParser(prog="terbro", description="Terbro: Terminal Reader")
     parser.add_argument("url", nargs="?", help="URL to read")
@@ -126,6 +148,7 @@ def main():
     parser.add_argument("--refresh", action="store_true", help="Force network fetch")
     parser.add_argument("--history", action="store_true", help="Show history")
     parser.add_argument("--search", metavar="QUERY", help="Search history")
+    parser.add_argument("--clear", action="store_true", help="Delete all cached articles")
 
     args = parser.parse_args()
 
@@ -133,6 +156,14 @@ def main():
     if args.history or args.search:
         handle_history(args.search)
         return
+
+    # Clear cache logic
+    if args.clear:
+        clear_cache()
+        return
+
+    # Trigger auto-clean every time you fetch a new article
+    manage_cache(limit=100)
 
     # Help Logic
     if not args.url:
