@@ -93,10 +93,10 @@ def fetch_content(url, refresh=False, offline=False):
         return cache_path.read_text(encoding='utf-8'), url
     
     if offline: 
-        die("Offline mode: No cached version found.", 2)
+        die("page not in cache (offline mode requested)", 2)
 
     try:
-        r = requests.get(url, headers={"User-Agent": "Terbro/2.1"}, timeout=10)
+        r = requests.get(url, headers={"User-Agent": "Terbro/2.0"}, timeout=10)
         r.raise_for_status()
         cache_path.write_text(r.text, encoding='utf-8')
         return r.text, r.url # Return final URL in case of redirects
@@ -248,6 +248,19 @@ def manage_cache(limit=100):
     if len(files) > limit:
         for f in files[:len(files) - limit]:
             f.unlink()
+
+def handle_history(query=None):
+    if not HISTORY_FILE.exists(): 
+        print("No history recorded yet.")
+        return
+    with open(HISTORY_FILE, "r") as f:
+        data = json.load(f)
+    if query:
+        data = [h for h in data if query.lower() in h['title'].lower() or query.lower() in h['url'].lower()]
+    
+    print(f"{Bcolors.BOLD}RECENT ARTICLES:{Bcolors.ENDC}")
+    for i, entry in enumerate(data[:20]):
+        print(f"[{i}] {Bcolors.CYAN}{entry['title']}{Bcolors.ENDC}\n    {entry['url']}")
 
 def main():
     parser = argparse.ArgumentParser(prog="terbro")
