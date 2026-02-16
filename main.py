@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# So the python shebang is optional here.
 
 import sys
 import re

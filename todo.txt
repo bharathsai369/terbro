@@ -1,9 +1,0 @@
-todo:
-
-1. make a bash script for this
-2. make it take input from the bash script or from the python code
-3. make it remember the previous searches
-4. error handling
-5. add styling if possible
-6. make an optional gui format, where using a flag with the command enables to open a tkinter gui interface
-7. make reading session be like man pages
