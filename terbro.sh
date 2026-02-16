@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
 
-# Location of project
 APP="$HOME/Documents/workspace/terbro"
 VENV="$APP/tbr-env"
 PY="$VENV/bin/python"
 SCRIPT="$APP/main.py"
 
-if [ -z "$1" ]; then
-    echo "Usage: terbro <url>"
-    exit 1
+# If user asks for help, history, or saving a file, don't use the pager
+if [[ "$*" == *"--help"* ]] || [[ "$*" == *"-h"* ]] || [[ "$*" == *"--save"* ]] || [[ "$*" == *"--history"* ]] || [[ "$*" == *"--search"* ]]; then
+    "$PY" "$SCRIPT" "$@"
+else
+    # Use -R for ANSI color support in less
+    "$PY" "$SCRIPT" "$@" | less -R -M -i -j5
 fi
-
-# run program inside venv and open pager
-"$PY" "$SCRIPT" "$1" | less -R -M -i
