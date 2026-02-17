@@ -1,10 +1,32 @@
 
+---
+
+# TERBRO DEVELOPMENT ROADMAP
+
 Think of it as stages:
+
 **CLI → Reader → Offline Tool → Mini Browser → Knowledge Tool**
 
 ---
 
-# TERBRO DEVELOPMENT ROADMAP
+## Current Status (Implemented So Far)
+
+TerBro is now a **real usable terminal article reader** with caching, history, markdown export, and pager integration.
+
+You can already use it as:
+
+```
+terbro https://example.com
+terbro https://example.com --markdown
+terbro https://example.com --offline
+terbro https://example.com --refresh
+terbro https://example.com --images
+terbro https://example.com --save article.txt
+terbro --history
+terbro --clear
+```
+
+It behaves like a lightweight `man`-style reader for web articles.
 
 ---
 
@@ -12,9 +34,9 @@ Think of it as stages:
 
 Make the current tool solid before adding features.
 
-* [ ] Proper error handling (timeouts, DNS failure, blocked site)
-* [ ] Friendly error messages
-* [ ] Exit codes (0 success / 1 usage / 2 network / 3 parse)
+* [x] Proper error handling (timeouts, DNS failure fallback to cache)
+* [x] Friendly error messages
+* [x] Exit codes (0 success / 2 network / 3 error)
 * [ ] Config file `~/.config/terbro/config.json`
 * [ ] Logging (debug mode `--debug`)
 
@@ -33,16 +55,16 @@ terbro URL --save article.txt
 terbro URL --images
 terbro URL --offline
 terbro URL --refresh
-terbro --search "query"
 terbro --history
+terbro --clear
 ```
 
 Tasks:
 
-* [ ] Replace sys.argv with argparse
-* [ ] Help page (`-h`)
-* [ ] Flags validation
-* [ ] Multiple output modes
+* [x] Replace sys.argv with argparse
+* [x] Help page (`-h`)
+* [x] Flags validation
+* [x] Multiple output modes
 
 ---
 
@@ -52,17 +74,19 @@ Tasks:
 
 Make it feel like `man`:
 
-* [ ] section separators
-* [ ] bold headings
-* [ ] wrapped paragraphs
-* [ ] pager friendly formatting
-* [ ] optional colors
+* [x] section separators
+* [x] bold headings
+* [x] pager friendly formatting
+* [x] optional colors
+* [x] opens automatically inside `less`
 
 ### Styling
 
-* [ ] ANSI headings
-* [ ] quote indentation
-* [ ] list formatting
+* [x] ANSI headings
+* [x] quote indentation
+* [x] list formatting
+* [x] colored links
+* [x] image markers
 
 ---
 
@@ -74,10 +98,12 @@ Make it feel like `man`:
 ~/.cache/terbro/
 ```
 
-* [ ] URL → SHA256 filename
-* [ ] auto load if cached
-* [ ] `--refresh`
-* [ ] `--offline`
+* [x] URL → SHA256 filename
+* [x] auto load if cached
+* [x] `--refresh`
+* [x] `--offline`
+* [x] network fallback to cache
+* [x] `--clear` cache
 
 ---
 
@@ -88,21 +114,21 @@ terbro URL --save article.txt
 terbro URL --markdown --save article.md
 ```
 
-* [ ] plain text save
-* [ ] markdown save
+* [x] plain text save
+* [x] markdown save
 
 ---
 
 ### History System
 
 ```
-~/.local/share/terbro/history
+~/.local/share/terbro/history.json
 ```
 
-* [ ] remember opened URLs
-* [ ] remember search queries
-* [ ] `terbro --history`
-* [ ] reopen previous article
+* [x] remember opened URLs
+* [x] `terbro --history`
+* [x] reopen previous article
+* [x] interactive selection menu
 
 ---
 
@@ -114,8 +140,8 @@ terbro URL --markdown --save article.md
 terbro URL --markdown
 ```
 
-* [ ] convert HTML → markdown
-* [ ] compatible with note apps
+* [x] convert HTML → markdown
+* [x] compatible with note apps
 
 ---
 
@@ -125,12 +151,7 @@ terbro URL --markdown
 terbro URL --images
 ```
 
-Shows:
-
-```
-[1] image.jpg
-[2] diagram.png
-```
+Shows inline image URLs.
 
 ---
 
@@ -147,20 +168,9 @@ Behavior:
 1. Fetch search results page
 2. Extract top 10 links
 3. Show numbered menu
+4. Open selected article
 
-```
-1. What is TCP?
-2. TCP Explained
-3. TCP vs UDP
-```
-
-User selects:
-
-```
-> 2
-```
-
-Opens article in reader.
+* [ ] Not implemented
 
 ---
 
@@ -182,17 +192,17 @@ Now TerBro becomes a lightweight terminal browser launcher.
 terbro --library search "linux kernel"
 ```
 
+* [ ] Not implemented
+
 ---
 
 ### Dictionary Integration
-
-Select word → definition
 
 ```
 terbro define recursion
 ```
 
-Later integrate with selection hotkey.
+* [ ] Not implemented
 
 ---
 
@@ -202,19 +212,17 @@ Later integrate with selection hotkey.
 terbro --rss https://site/feed.xml
 ```
 
-Pick article → open in reader.
+* [ ] Not implemented
 
 ---
 
 ### Reading Session Mode
 
-A continuous session like a book:
-
 ```
 terbro session URL1 URL2 URL3
 ```
 
-Navigate between articles like chapters.
+* [ ] Not implemented
 
 ---
 
@@ -227,11 +235,14 @@ terbro URL --gui
 Tkinter window:
 
 * scrollable article
+
 * clickable links
+
 * search box
+
 * open from clipboard
 
-CLI remains primary — GUI is optional frontend.
+* [ ] Not implemented
 
 ---
 
@@ -239,6 +250,7 @@ CLI remains primary — GUI is optional frontend.
 
 ### Bash Integration
 
+* [x] pager wrapper script
 * [ ] clipboard reader
 * [ ] hotkey launcher
 * [ ] open highlighted URL
@@ -248,6 +260,8 @@ CLI remains primary — GUI is optional frontend.
 ### Keybinding Launcher
 
 Select URL → press shortcut → opens reader.
+
+* [ ] Not implemented
 
 ---
 
@@ -295,15 +309,29 @@ Capabilities:
 
 Follow this to avoid burnout:
 
-1. argparse flags
-2. save + markdown
-3. cache + offline
-4. history
+1. argparse flags ✅
+2. save + markdown ✅
+3. cache + offline ✅
+4. history ✅
 5. search mode
 6. navigation
 7. rss
 8. dictionary
 9. gui
 10. fancy features
+
+---
+
+## Quick Usage
+
+```
+terbro https://example.com
+```
+
+Inside pager:
+
+* `/` → search text
+* `q` → quit
+* arrows / j k → scroll
 
 ---
