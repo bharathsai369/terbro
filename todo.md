@@ -11,7 +11,7 @@ Think of it as stages:
 
 ## Current Status (Implemented So Far)
 
-TerBro is now a **real usable terminal article reader** with caching, history, markdown export, and pager integration.
+TerBro is now a **real usable terminal webpage reader** with caching, history, markdown export, and pager integration.
 
 You can already use it as:
 

@@ -47,10 +47,30 @@ def fetch_content(url, refresh=False, offline=False):
         die("Offline mode: No cached version found.", 2)
 
     try:
-        r = requests.get(url, headers={"User-Agent": "terbro"}, timeout=10)
-        r.raise_for_status()
-        cache_path.write_text(r.text, encoding='utf-8')
-        return r.text, r.url 
+        # 1. Use a more "Human" User-Agent to avoid bot-blocking
+        headers = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) terbro"}
+        
+        # 2. Use stream=True to check headers before downloading the whole body
+        with requests.get(url, headers=headers, timeout=10, stream=True) as r:
+            r.raise_for_status()
+
+            # 3. Size Guard (Limit to 5MB to prevent memory issues)
+            cl = r.headers.get("content-length")
+            if cl and int(cl) > 5_000_000:
+                die(f"Page too large: {int(cl)//1024}KB (Limit: 5000KB)")
+
+            # 4. MIME Guard (Ensure it is actually a webpage)
+            ctype = r.headers.get("content-type", "").lower()
+            if "text/html" not in ctype:
+                die(f"Unsupported content type: {ctype}")
+
+            # 5. Encoding fix: use apparent_encoding if standard detection fails
+            r.encoding = r.apparent_encoding
+            text_content = r.text
+            
+        cache_path.write_text(text_content, encoding='utf-8')
+        return text_content, r.url 
+        
     except Exception as e:
         if cache_path.exists():
             return cache_path.read_text(encoding='utf-8'), url
@@ -118,7 +138,13 @@ def process(html, current_url, args):
                 output.append(txt)
         output.append("")
 
-    return "\n".join(output), title, links
+    # return "\n".join(output), title, links
+    
+    # Normalize whitespace: limit to max 2 consecutive newlines
+    final_text = "\n".join(output)
+    final_text = re.sub(r'\n{3,}', '\n\n', final_text)
+    
+    return final_text, title, links
 
 def interactive_nav(links):
     if not links:
