@@ -1,4 +1,5 @@
 
+---
 
 ````md
 # terbro — Terminal Browser Reader
@@ -6,8 +7,8 @@
 `terbro` is a small CLI tool that turns any webpage into a clean, readable
 man-page style reading session inside the terminal.
 
-Instead of opening a browser, the page is fetched, cleaned, and displayed
-through a pager (`less`) so you can scroll, search and read comfortably.
+Instead of opening a browser, the page is fetched, cleaned, cached and displayed
+through a pager (`less`) so you can scroll, search and read comfortably — even offline.
 
 ---
 
@@ -17,6 +18,13 @@ through a pager (`less`) so you can scroll, search and read comfortably.
 - Removes navigation, ads and scripts
 - Extracts main article content heuristically
 - Man-page like navigation (via `less`)
+- Automatic pager integration
+- Page caching for offline reading
+- History system (reopen previously read pages)
+- Markdown export
+- Image link listing
+- Refresh cached pages
+- Clear cache
 - Runs in isolated Python virtual environment
 - Simple one-command usage
 
@@ -73,6 +81,7 @@ Or place files manually so structure becomes:
 terbro/
  ├─ main.py
  ├─ README.md
+ ├─ terbro (launcher script)
  └─ tbr-env/ (created later)
 ```
 
@@ -86,7 +95,7 @@ Inside project directory:
 python3 -m venv tbr-env
 source tbr-env/bin/activate
 pip install requests beautifulsoup4
-or
+# OR
 pip install -r requirements.txt
 deactivate
 ```
@@ -119,12 +128,29 @@ VENV="$APP/tbr-env"
 PY="$VENV/bin/python"
 SCRIPT="$APP/main.py"
 
-if [ -z "$1" ]; then
-    echo "Usage: terbro <url>"
-    exit 1
+# 1. Clear Cache/Save Mode - No pager
+if [[ "$*" == *"--clear"* ]] || [[ "$*" == *"--save"* ]]; then
+    "$PY" "$SCRIPT" "$@"
+    exit 0
 fi
 
-"$PY" "$SCRIPT" "$1" | less -R -M -i
+# 2. History Mode - Interactive
+if [[ "$*" == *"--history"* ]]; then
+    SELECTED_URL=$("$PY" "$SCRIPT" --history)
+    if [ -n "$SELECTED_URL" ]; then
+        "$PY" "$SCRIPT" "$SELECTED_URL" | less -R -i -M
+    fi
+    exit 0
+fi
+
+# 3. Help
+if [[ "$*" == *"-h"* ]] || [[ "$*" == *"--help"* ]] || [ -z "$1" ]; then
+    "$PY" "$SCRIPT" --help
+    exit 0
+fi
+
+# 4. Standard Usage
+"$PY" "$SCRIPT" "$@" | less -R -i -M
 ```
 
 Make executable:
@@ -144,6 +170,8 @@ source ~/.bashrc
 
 ## Usage
 
+### Basic reading
+
 ```bash
 terbro <url>
 ```
@@ -154,9 +182,70 @@ Example:
 terbro https://en.wikipedia.org/wiki/Linux
 ```
 
-The page opens in a terminal reading session.
+---
 
-Quit with:
+### Markdown export
+
+```bash
+terbro https://example.com --markdown
+```
+
+---
+
+### Save article
+
+```bash
+terbro https://example.com --save article.txt
+terbro https://example.com --markdown --save article.md
+```
+
+---
+
+### Offline mode
+
+Reads cached version only:
+
+```bash
+terbro https://example.com --offline
+```
+
+---
+
+### Refresh cache
+
+```bash
+terbro https://example.com --refresh
+```
+
+---
+
+### Show image links
+
+```bash
+terbro https://example.com --images
+```
+
+---
+
+### History
+
+Reopen previously read pages interactively:
+
+```bash
+terbro --history
+```
+
+---
+
+### Clear cache
+
+```bash
+terbro --clear
+```
+
+---
+
+Quit reader with:
 
 ```
 q
@@ -167,7 +256,7 @@ q
 ## How It Works
 
 1. Bash command runs Python inside virtual environment
-2. Python downloads webpage safely
+2. Python downloads webpage safely (or loads cache)
 3. HTML is parsed using BeautifulSoup
 4. Scripts/navigation removed
 5. Largest readable content block selected
@@ -179,15 +268,30 @@ terbro → bash → python → clean text → less pager
 
 ---
 
+## Storage Locations
+
+Cache:
+
+```
+~/.cache/terbro/
+```
+
+History:
+
+```
+~/.local/share/terbro/history.json
+```
+
+---
+
 ## Security Measures
 
 The reader performs basic safety checks:
 
 * Only http/https URLs allowed
-* Content-type must be HTML
-* Max page size limit (5MB)
 * Timeout on requests
-* Custom user agent
+* Graceful fallback to cached copy if network fails
+* ANSI escape sanitization before saving
 
 ---
 
@@ -196,6 +300,7 @@ The reader performs basic safety checks:
 ```
 terbro/
 ├── main.py          # reader engine
+├── terbro           # launcher script
 ├── tbr-env/         # virtual environment
 └── README.md
 
@@ -204,3 +309,4 @@ terbro/
 ```
 
 ---
+
